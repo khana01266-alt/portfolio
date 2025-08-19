@@ -1,0 +1,1115 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayaan Rafiq - Short-Form Content Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'orbitron': ['Orbitron', 'monospace'],
+                        'exo': ['Exo', 'sans-serif'],
+                    },
+                    colors: {
+                        'neon-purple': '#8B5CF6',
+                        'neon-blue': '#3B82F6',
+                        'neon-green': '#06FFA5',
+                        'coral': '#FF6B6B',
+                        'dark-navy': '#1A1A2E',
+                        'deep-black': '#0A0A0A',
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'slide-up': 'slideUp 0.8s ease-out',
+                    },
+                    backdropBlur: {
+                        xs: '2px',
+                    }
+                }
+            }
+        };
+    </script>
+    
+    <style>
+        * {
+            cursor: none;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0A0A0A 0%, #1A1A2E 100%);
+            overflow-x: hidden;
+        }
+        
+        .custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #8B5CF6 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: difference;
+            transition: transform 0.1s ease;
+        }
+        
+        .custom-cursor-trail {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: #06FFA5;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.6;
+        }
+        
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .text-gradient {
+            background: linear-gradient(45deg, #8B5CF6, #3B82F6, #06FFA5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .neon-glow {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        }
+        
+        .particle-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes glow {
+            0% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.5); }
+            100% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.8), 0 0 40px rgba(59, 130, 246, 0.6); }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .video-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .video-container:hover {
+            transform: scale(1.05);
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.3);
+        }
+        
+        .service-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        
+        .service-card:hover {
+            transform: rotateY(5deg) rotateX(5deg) translateZ(20px);
+        }
+        
+        .testimonial-card {
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+            transform-style: preserve-3d;
+        }
+        
+        .testimonial-card:hover .testimonial-front {
+            transform: rotateY(-180deg);
+        }
+        
+        .testimonial-card:hover .testimonial-back {
+            transform: rotateY(0deg);
+        }
+        
+        .testimonial-front, .testimonial-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            transition: transform 0.6s;
+        }
+        
+        .testimonial-back {
+            transform: rotateY(180deg);
+        }
+        
+        .typing-animation::after {
+            content: '|';
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 10;
+        }
+        
+        @media (max-width: 768px) {
+            .custom-cursor, .custom-cursor-trail {
+                display: none;
+            }
+            * {
+                cursor: auto;
+            }
+        }
+    </style>
+</head>
+<body class="font-exo text-white">
+    <!-- Custom Cursor -->
+    <div class="custom-cursor"></div>
+    <div class="custom-cursor-trail"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glassmorphism">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="font-orbitron text-xl font-bold text-gradient">
+                    @_knowayaan
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#about" class="hover:text-neon-purple transition-colors">About</a>
+                    <a href="#services" class="hover:text-neon-purple transition-colors">Services</a>
+                    <a href="#portfolio" class="hover:text-neon-purple transition-colors">Portfolio</a>
+                    <a href="#contact" class="hover:text-neon-purple transition-colors">Contact</a>
+                </div>
+                <div class="md:hidden">
+                    <button class="text-white hover:text-neon-purple">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Hero Section -->
+    <section id="hero" class="relative h-screen flex items-center justify-center overflow-hidden">
+        <canvas id="particle-canvas" class="particle-container"></canvas>
+        
+        <div class="hero-content text-center max-w-4xl mx-auto px-6">
+            <h1 class="font-orbitron text-5xl md:text-7xl font-black mb-6">
+                <span class="text-gradient">AYAAN RAFIQ</span>
+            </h1>
+            <h2 class="font-exo text-2xl md:text-4xl mb-8 typing-animation" id="typing-text">
+                I Turn Clips Into Viral Stories
+            </h2>
+            <p class="text-lg md:text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
+                Short-Form Content Editor specializing in fast-paced, cinematic, music-synced edits for gym, fashion, travel, and talking-head content.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-6 justify-center">
+                <a href="#video-editing" class="glassmorphism px-8 py-4 rounded-full font-semibold text-lg hover:neon-glow transition-all duration-300 border-2 border-neon-purple hover:bg-neon-purple hover:text-black">
+                    <i class="fab fa-youtube mr-2"></i>
+                    Watch My Edits
+                   
+                </a>
+                <a target="_blank" href="https://www.instagram.com/_knowayaan?igsh=dGw3bTByNGp3YWUz" class="glassmorphism px-8 py-4 rounded-full font-semibold text-lg hover:neon-glow transition-all duration-300 border-2 border-neon-green hover:bg-neon-green hover:text-black">
+                    <i class="fab fa-instagram mr-2"></i>
+                    DM to Collaborate
+                </a>
+            </div>
+        </div>
+        
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <i class="fas fa-chevron-down text-2xl text-neon-purple"></i>
+        </div>
+    </section>
+    
+    <!-- About Me Section -->
+    <section id="about" class="py-20 relative">
+        <div class="container mx-auto px-6">
+            <div class="max-w-6xl mx-auto">
+                <h2 class="font-orbitron text-4xl md:text-5xl font-bold text-center mb-16 text-gradient">
+                    About Me
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    <div class="glassmorphism p-8 rounded-2xl">
+                        <h3 class="font-orbitron text-2xl font-bold mb-6 text-neon-purple">My Editing Style</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 glassmorphism rounded-full flex items-center justify-center">
+                                    <i class="fas fa-bolt text-neon-green"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold">Fast-Paced Editing</h4>
+                                    <p class="text-gray-400">Quick cuts that keep viewers engaged</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 glassmorphism rounded-full flex items-center justify-center">
+                                    <i class="fas fa-film text-neon-blue"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold">Cinematic Visuals</h4>
+                                    <p class="text-gray-400">Movie-quality aesthetics and transitions</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 glassmorphism rounded-full flex items-center justify-center">
+                                    <i class="fas fa-music text-neon-purple"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold">Music-Synced</h4>
+                                    <p class="text-gray-400">Perfect timing with beats and rhythm</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glassmorphism p-8 rounded-2xl">
+                        <h3 class="font-orbitron text-2xl font-bold mb-6 text-neon-green">Content Niches</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center p-4 glassmorphism rounded-xl hover:neon-glow transition-all">
+                                <i class="fas fa-dumbbell text-3xl text-neon-purple mb-2"></i>
+                                <p class="font-semibold">Gym & Fitness</p>
+                            </div>
+                            <div class="text-center p-4 glassmorphism rounded-xl hover:neon-glow transition-all">
+                                <i class="fas fa-tshirt text-3xl text-neon-blue mb-2"></i>
+                                <p class="font-semibold">Fashion</p>
+                            </div>
+                            <div class="text-center p-4 glassmorphism rounded-xl hover:neon-glow transition-all">
+                                <i class="fas fa-plane text-3xl text-neon-green mb-2"></i>
+                                <p class="font-semibold">Travel</p>
+                            </div>
+                            <div class="text-center p-4 glassmorphism rounded-xl hover:neon-glow transition-all">
+                                <i class="fas fa-microphone text-3xl text-coral mb-2"></i>
+                                <p class="font-semibold">Talking Head</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tools Section -->
+                <div class="mt-16 text-center">
+                    <h3 class="font-orbitron text-2xl font-bold mb-8 text-gradient">Tools I Master</h3>
+                    <div class="flex flex-wrap justify-center gap-6">
+                        <div class="glassmorphism px-6 py-3 rounded-full hover:neon-glow transition-all">
+                            <span class="font-semibold">CapCut</span>
+                        </div>
+                        <div class="glassmorphism px-6 py-3 rounded-full hover:neon-glow transition-all">
+                            <span class="font-semibold">Adobe Premiere Pro</span>
+                        </div>
+                        <div class="glassmorphism px-6 py-3 rounded-full hover:neon-glow transition-all">
+                            <span class="font-semibold">After Effects</span>
+                        </div>
+                        <div class="glassmorphism px-6 py-3 rounded-full hover:neon-glow transition-all">
+                            <span class="font-semibold">VN</span>
+                        </div>
+                        <div class="glassmorphism px-6 py-3 rounded-full hover:neon-glow transition-all">
+                            <span class="font-semibold">Photoshop</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Services Section -->
+    <section id="services" class="py-20 relative">
+        <div class="container mx-auto px-6">
+            <h2 class="font-orbitron text-4xl md:text-5xl font-bold text-center mb-16 text-gradient">
+                Services
+            </h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <div class="service-card glassmorphism p-8 rounded-2xl text-center hover:animate-float">
+                    <div class="w-16 h-16 mx-auto mb-6 glassmorphism rounded-full flex items-center justify-center">
+                        <i class="fas fa-cut text-2xl text-neon-purple"></i>
+                    </div>
+                    <h3 class="font-orbitron text-xl font-bold mb-4">Reels Editing</h3>
+                    <p class="text-gray-400">Viral-ready short-form content optimized for maximum engagement and reach</p>
+                </div>
+                
+                <div class="service-card glassmorphism p-8 rounded-2xl text-center hover:animate-float">
+                    <div class="w-16 h-16 mx-auto mb-6 glassmorphism rounded-full flex items-center justify-center">
+                        <i class="fas fa-sync text-2xl text-neon-blue"></i>
+                    </div>
+                    <h3 class="font-orbitron text-xl font-bold mb-4">Sync Cuts</h3>
+                    <p class="text-gray-400">Perfect timing with music beats for rhythmic and engaging content</p>
+                </div>
+                
+                <div class="service-card glassmorphism p-8 rounded-2xl text-center hover:animate-float">
+                    <div class="w-16 h-16 mx-auto mb-6 glassmorphism rounded-full flex items-center justify-center">
+                        <i class="fas fa-magic text-2xl text-neon-green"></i>
+                    </div>
+                    <h3 class="font-orbitron text-xl font-bold mb-4">Cinematic Transitions</h3>
+                    <p class="text-gray-400">Smooth, professional transitions that elevate your content quality</p>
+                </div>
+                
+                <div class="service-card glassmorphism p-8 rounded-2xl text-center hover:animate-float">
+                    <div class="w-16 h-16 mx-auto mb-6 glassmorphism rounded-full flex items-center justify-center">
+                        <i class="fas fa-font text-2xl text-coral"></i>
+                    </div>
+                    <h3 class="font-orbitron text-xl font-bold mb-4">Typography</h3>
+                    <p class="text-gray-400">Dynamic text animations and graphics that complement your message</p>
+                </div>
+                
+                <div class="service-card glassmorphism p-8 rounded-2xl text-center hover:animate-float">
+                    <div class="w-16 h-16 mx-auto mb-6 glassmorphism rounded-full flex items-center justify-center">
+                        <i class="fas fa-palette text-2xl text-neon-purple"></i>
+                    </div>
+                    <h3 class="font-orbitron text-xl font-bold mb-4">Color Grading</h3>
+                    <p class="text-gray-400">Professional color correction and grading for cinematic appeal</p>
+                </div>
+                
+                <div class="service-card glassmorphism p-8 rounded-2xl text-center hover:animate-float">
+                    <div class="w-16 h-16 mx-auto mb-6 glassmorphism rounded-full flex items-center justify-center">
+                        <i class="fas fa-rocket text-2xl text-neon-blue"></i>
+                    </div>
+                    <h3 class="font-orbitron text-xl font-bold mb-4">24h Delivery</h3>
+                    <p class="text-gray-400">Fast turnaround times without compromising on quality</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Services Section -->
+<section id="services" class="py-20 relative">
+  <div class="container mx-auto px-6">
+    <h2 class="font-orbitron text-4xl md:text-5xl font-bold text-center mb-16 text-gradient">
+      Explore by Category
+    </h2>
+
+    <!-- Tabs -->
+    <div class="flex flex-wrap justify-center gap-4 mb-12">
+      <button class="service-tab active px-6 py-2 rounded-xl bg-gradient-to-r from-neon-purple to-neon-blue text-white font-semibold" data-tab="video-editing">Video Editing</button>
+      <button class="service-tab px-6 py-2 rounded-xl bg-gradient-to-r from-neon-green to-neon-blue text-white font-semibold" data-tab="videography">Videography</button>
+      <button class="service-tab px-6 py-2 rounded-xl bg-gradient-to-r from-coral to-neon-green text-white font-semibold" data-tab="uiux">UI/UX Design</button>
+      <button class="service-tab px-6 py-2 rounded-xl bg-gradient-to-r from-neon-purple to-coral text-white font-semibold" data-tab="social-media">Social Media Manager</button>
+      <button class="service-tab px-6 py-2 rounded-xl bg-gradient-to-r from-neon-blue to-coral text-white font-semibold" data-tab="graphic-design">Graphic Design</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content max-w-6xl mx-auto">
+      
+      <!-- transition -->
+<div id="video-editing" class="service-panel space-y-10">
+  <!-- Category: Cinematic Edits -->
+  <div class="transitions">
+    <h2 class="text-xl md:text-2xl font-bold font-orbitron mb-4 text-white">cinematic</h2>
+    <div>
+    <div class="columns-1 sm:columns-2 lg:columns-3 gap-6">
+    
+    <!-- Card 1 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./video editing/cinematic/1.mov" type="video/mp4" />
+      </video>
+    </div>
+   
+    <!-- Card 2 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./video editing/cinematic/2.mov" type="video/mp4" />
+      </video>
+    </div>
+    
+    
+    
+
+  </div>
+  </div>
+  </div>
+
+  <!-- Category: transition -->
+  <div class="transitions">
+    <h2 class="text-xl md:text-2xl font-bold font-orbitron mb-4 text-white">Transitions</h2>
+    <div>
+    <div class="columns-1 sm:columns-2 lg:columns-3 gap-6">
+    
+    <!-- Card 1 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./video editing/transition/1.mov" type="video/mp4" />
+      </video>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./video editing/transition/2.mov" type="video/mp4" />
+      </video>
+    </div>
+    <!-- Card 3 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./video editing/cinematic/3.mov" type="video/mp4" />
+      </video>
+    </div>
+
+   
+    <!-- Card 4 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none" class="w-full h-auto rounded-xl">
+        <source src="./video editing/transition/3.mov" type="video/mp4" />
+      </video>
+    </div>
+    
+
+  </div>
+  </div>
+  </div>
+
+  <!-- Category: Talking head -->
+  <div class="transitions">
+    <h2 class="text-xl md:text-2xl font-bold font-orbitron mb-4 text-white">talking-head</h2>
+    <div>
+    <div class="columns-1 sm:columns-2 lg:columns-3 gap-6">
+    
+    <!-- Card 1 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./video editing/talking-head/1.mov" type="video/mp4" />
+      </video>
+    </div>
+      <!-- Card 3 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./video editing/talking-head/3.mov" type="video/mp4" />
+      </video>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./video editing/talking-head/2.mov" type="video/mp4" />
+      </video>
+    </div>
+  
+   
+   
+
+  </div>
+  </div>
+  </div>
+  <!-- Category: Gamer Edit -->
+  <div class="transitions">
+    <h2 class="text-xl md:text-2xl font-bold font-orbitron mb-4 text-white">Gaming Editz</h2>
+    <div>
+    <div class="columns-1 sm:columns-2 lg:columns-3 gap-6">
+    
+    <!-- Card 1 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./video editing/gaming/IMG_4155.MOV" type="video/mp4" />
+      </video>
+    </div>
+
+    
+    
+
+  </div>
+  </div>
+  </div>
+
+  <!-- nature -->
+  <div class="transitions">
+    <h2 class="text-xl md:text-2xl font-bold font-orbitron mb-4 text-white">Nature</h2>
+    <div>
+    <div class="columns-1 sm:columns-2 lg:columns-3 gap-6">
+    
+    <!-- Card 1 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./video editing/nature//1.mov" type="video/mp4" />
+      </video>
+    </div>
+
+    
+    
+
+  </div>
+  </div>
+  </div>
+</div>
+
+
+    <!-- Videography - True Masonry -->
+<div id="videography" class="service-panel hidden">
+  <div class="columns-1 sm:columns-2 lg:columns-3 gap-6">
+    
+    <!-- Card 1 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./videos/IMG_8058.MOV" type="video/mp4" />
+      </video>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none"  class="w-full h-auto rounded-xl">
+        <source src="./videos/IMG_8069.MOV" type="video/mp4" />
+      </video>
+    </div>
+
+   
+    <!-- Card 4 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none" class="w-full h-auto rounded-xl">
+        <source src="./videos/IMG_3806.MOV" type="video/mp4" />
+      </video>
+    </div>
+    <!-- Card 5 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none" muted  class="w-full h-auto rounded-xl">
+        <source src="./videos/5.MOV" type="video/mp4" />
+      </video>
+    </div>
+    <!-- Card 6 -->
+    <div class="break-inside-avoid mb-6 glassmorphism p-3 rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
+      <video  preload="none" muted class="w-full h-auto rounded-xl">
+        <source src="./videos/6.MP4" type="video/mp4" />
+      </video>
+    </div>
+
+  </div>
+</div>
+
+      <!-- UI/UX -->
+<div id="uiux" class="service-panel hidden grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+  <!-- Card 1 -->
+  <a href="https://www.figma.com/design/2KHOxYRhqfWUJdUoU7vsZU/Untitled?node-id=19-179&t=m88lkYUrhbjAlNPO-1" target="_blank" class="video-container glassmorphism p-4 rounded-2xl transition-transform duration-300 hover:scale-102 block">
+    <div class="relative bg-gradient-to-br from-neon-blue to-coral rounded-xl h-48 flex items-center justify-center mb-4 overflow-hidden">
+      <img src="./uiux//IMG_3997.PNG" alt="UI Design 1" class="rounded-xl object-cover w-full h-full" />
+    </div>
+    <h3 class="font-orbitron text-lg font-bold mb-2">RoadPilot UI</h3>
+    <p class="text-gray-400 text-sm">Smart navigation with real-time insights.</p>
+  </a>
+
+  <!-- Card 2 -->
+ <a href="https://www.figma.com/design/aJDCmFBcD3a1abzJ7AHLjP/Untitled?node-id=0-1&t=bHjP3b18hVyhZkkH-1" target="_blank" class="video-container glassmorphism p-4 rounded-2xl transition-transform duration-300 hover:scale-102 block">
+  <div class="relative bg-gradient-to-br from-neon-blue to-coral rounded-xl h-48 flex items-center justify-center mb-4 overflow-hidden">
+    <img src="./uiux/Screenshot 2025-08-08 105200.png" alt="PeaceVault UI Design" class="rounded-xl object-cover w-full h-full" />
+  </div>
+  <h3 class="font-orbitron text-lg font-bold mb-2">PeaceVault – Zen UI</h3>
+  <p class="text-gray-400 text-sm">A calming mobile UI focused on breathing, body scans, and mindfulness for mental clarity.</p>
+</a>
+
+
+  <!-- socail media -->
+
+</div>
+<div id="social-media" class="service-panel hidden grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+  <!-- Card 1 -->
+  <a href="https://www.figma.com/design/2KHOxYRhqfWUJdUoU7vsZU/Untitled?node-id=19-179&t=m88lkYUrhbjAlNPO-1" target="_blank" class="video-container glassmorphism p-4 rounded-2xl transition-transform duration-300 hover:scale-102 block">
+    <div class="relative bg-gradient-to-br from-neon-blue to-coral rounded-xl h-48 flex items-center justify-center mb-4 overflow-hidden">
+      <img src="./uiux//IMG_3997.PNG" alt="UI Design 1" class="rounded-xl object-cover w-full h-full" />
+    </div>
+    <h3 class="font-orbitron text-lg font-bold mb-2">RoadPilot UI</h3>
+    <p class="text-gray-400 text-sm">Smart navigation with real-time insights.</p>
+  </a>
+
+  <!-- Card 2 -->
+ <a href="https://www.figma.com/design/aJDCmFBcD3a1abzJ7AHLjP/Untitled?node-id=0-1&t=bHjP3b18hVyhZkkH-1" target="_blank" class="video-container glassmorphism p-4 rounded-2xl transition-transform duration-300 hover:scale-102 block">
+  <div class="relative bg-gradient-to-br from-neon-blue to-coral rounded-xl h-48 flex items-center justify-center mb-4 overflow-hidden">
+    <img src="./uiux/Screenshot 2025-08-08 105200.png" alt="PeaceVault UI Design" class="rounded-xl object-cover w-full h-full" />
+  </div>
+  <h3 class="font-orbitron text-lg font-bold mb-2">PeaceVault – Zen UI</h3>
+  <p class="text-gray-400 text-sm">A calming mobile UI focused on breathing, body scans, and mindfulness for mental clarity.</p>
+</a>
+
+
+  <!-- Add more cards as needed -->
+
+</div>
+
+ <!-- Graphic Design -->
+<div id="graphic-design" class="service-panel hidden grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+  <!-- Card 1 -->
+  <a href="https://www.figma.com/design/2KHOxYRhqfWUJdUoU7vsZU/Untitled?node-id=19-179&t=m88lkYUrhbjAlNPO-1" target="_blank" class="video-container glassmorphism p-4 rounded-2xl transition-transform duration-300 hover:scale-102 block">
+    <div class="relative bg-gradient-to-br from-neon-blue to-coral rounded-xl h-48 flex items-center justify-center mb-4 overflow-hidden">
+      <img src="./uiux//IMG_3997.PNG" alt="UI Design 1" class="rounded-xl object-cover w-full h-full" />
+    </div>
+    <h3 class="font-orbitron text-lg font-bold mb-2">RoadPilot UI</h3>
+    <p class="text-gray-400 text-sm">Smart navigation with real-time insights.</p>
+  </a>
+
+  <!-- Card 2 -->
+ <a href="https://www.figma.com/design/aJDCmFBcD3a1abzJ7AHLjP/Untitled?node-id=0-1&t=bHjP3b18hVyhZkkH-1" target="_blank" class="video-container glassmorphism p-4 rounded-2xl transition-transform duration-300 hover:scale-102 block">
+  <div class="relative bg-gradient-to-br from-neon-blue to-coral rounded-xl h-48 flex items-center justify-center mb-4 overflow-hidden">
+    <img src="./uiux/Screenshot 2025-08-08 105200.png" alt="PeaceVault UI Design" class="rounded-xl object-cover w-full h-full" />
+  </div>
+  <h3 class="font-orbitron text-lg font-bold mb-2">PeaceVault – Zen UI</h3>
+  <p class="text-gray-400 text-sm">A calming mobile UI focused on breathing, body scans, and mindfulness for mental clarity.</p>
+</a>
+
+
+  <!-- Add more cards as needed -->
+
+</div>
+
+
+    
+
+
+    </div>
+  </div>
+</section>
+    
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-20 relative">
+        <div class="container mx-auto px-6">
+            <h2 class="font-orbitron text-4xl md:text-5xl font-bold text-center mb-16 text-gradient">
+                Client Testimonials
+            </h2>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <div class="testimonial-card glassmorphism rounded-2xl h-64 relative">
+                    <div class="testimonial-front p-8 rounded-2xl h-full flex flex-col justify-center text-center">
+                        <div class="w-16 h-16 mx-auto mb-4 glassmorphism rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-2xl text-neon-purple"></i>
+                        </div>
+                        <h3 class="font-orbitron text-lg font-bold mb-2">Sarah Johnson</h3>
+                        <p class="text-gray-400">Fitness Influencer</p>
+                    </div>
+                    <div class="testimonial-back p-8 rounded-2xl h-full flex flex-col justify-center">
+                        <i class="fas fa-quote-left text-2xl text-neon-purple mb-4"></i>
+                        <p class="text-gray-300 mb-4">"Ayaan transformed my gym content into viral sensations. His editing style perfectly captures the energy of my workouts!"</p>
+                        <div class="flex text-neon-green">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card glassmorphism rounded-2xl h-64 relative">
+                    <div class="testimonial-front p-8 rounded-2xl h-full flex flex-col justify-center text-center">
+                        <div class="w-16 h-16 mx-auto mb-4 glassmorphism rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-2xl text-neon-blue"></i>
+                        </div>
+                        <h3 class="font-orbitron text-lg font-bold mb-2">Marcus Chen</h3>
+                        <p class="text-gray-400">Fashion Brand Owner</p>
+                    </div>
+                    <div class="testimonial-back p-8 rounded-2xl h-full flex flex-col justify-center">
+                        <i class="fas fa-quote-left text-2xl text-neon-blue mb-4"></i>
+                        <p class="text-gray-300 mb-4">"The cinematic quality and attention to detail in Ayaan's edits elevated our brand's visual identity to a whole new level."</p>
+                        <div class="flex text-neon-green">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card glassmorphism rounded-2xl h-64 relative">
+                    <div class="testimonial-front p-8 rounded-2xl h-full flex flex-col justify-center text-center">
+                        <div class="w-16 h-16 mx-auto mb-4 glassmorphism rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-2xl text-neon-green"></i>
+                        </div>
+                        <h3 class="font-orbitron text-lg font-bold mb-2">Emily Rodriguez</h3>
+                        <p class="text-gray-400">Travel Blogger</p>
+                    </div>
+                    <div class="testimonial-back p-8 rounded-2xl h-full flex flex-col justify-center">
+                        <i class="fas fa-quote-left text-2xl text-neon-green mb-4"></i>
+                        <p class="text-gray-300 mb-4">"Ayaan's music-synced travel edits made my adventures look like movie trailers. Absolutely incredible work!"</p>
+                        <div class="flex text-neon-green">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Contact Section -->
+    <section id="contact" class="py-20 relative">
+        <div class="container mx-auto px-6">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="font-orbitron text-4xl md:text-5xl font-bold text-center mb-16 text-gradient">
+                    Let's Create Together
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-12">
+                    <div class="glassmorphism p-8 rounded-2xl">
+                        <h3 class="font-orbitron text-2xl font-bold mb-6">Get In Touch</h3>
+                        <div class="space-y-6">
+                            <a href="https://instagram.com/_knowayaan" target="_blank" class="flex items-center space-x-4 p-4 glassmorphism rounded-xl hover:neon-glow transition-all">
+                                <div class="w-12 h-12 glassmorphism rounded-full flex items-center justify-center">
+                                    <i class="fab fa-instagram text-xl text-neon-purple"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold">Instagram</p>
+                                    <p class="text-gray-400">@_knowayaan</p>
+                                </div>
+                            </a>
+                            
+                            <div class="flex items-center space-x-4 p-4 glassmorphism rounded-xl">
+                                <div class="w-12 h-12 glassmorphism rounded-full flex items-center justify-center">
+                                    <i class="fas fa-clock text-xl text-neon-blue"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold">Response Time</p>
+                                    <p class="text-gray-400">Within 2-4 hours</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-4 p-4 glassmorphism rounded-xl">
+                                <div class="w-12 h-12 glassmorphism rounded-full flex items-center justify-center">
+                                    <i class="fas fa-rocket text-xl text-neon-green"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold">Turnaround</p>
+                                    <p class="text-gray-400">24-48 hours delivery</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="glassmorphism p-8 rounded-2xl">
+                        <h3 class="font-orbitron text-2xl font-bold mb-6">Quick Contact</h3>
+                        <form class="space-y-6">
+                            <div>
+                                <input type="text" placeholder="Your Name" class="w-full p-4 glassmorphism rounded-xl bg-transparent border border-gray-600 focus:border-neon-purple focus:outline-none transition-colors" />
+                            </div>
+                            <div>
+                                <input type="email" placeholder="Your Email" class="w-full p-4 glassmorphism rounded-xl bg-transparent border border-gray-600 focus:border-neon-purple focus:outline-none transition-colors" />
+                            </div>
+                            <div>
+                                <select class="w-full p-4 glassmorphism rounded-xl bg-transparent border border-gray-600 focus:border-neon-purple focus:outline-none transition-colors">
+                                    <option value="">Project Type</option>
+                                    <option value="reels">Instagram Reels</option>
+                                    <option value="youtube">YouTube Shorts</option>
+                                    <option value="tiktok">TikTok Content</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <textarea placeholder="Project Details" rows="4" class="w-full p-4 glassmorphism rounded-xl bg-transparent border border-gray-600 focus:border-neon-purple focus:outline-none transition-colors resize-none"></textarea>
+                            </div>
+                            <button type="submit" class="w-full glassmorphism p-4 rounded-xl font-semibold hover:neon-glow transition-all duration-300 border-2 border-neon-purple hover:bg-neon-purple hover:text-black">
+                                Send Message
+                                <i class="fas fa-paper-plane ml-2"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="py-8 glassmorphism">
+        <div class="container mx-auto px-6 text-center">
+            <div class="font-orbitron text-xl font-bold mb-4 text-gradient">
+                @_knowayaan
+            </div>
+            <p class="text-gray-400 mb-4">
+                Turning your vision into viral reality, one edit at a time.
+            </p>
+            <div class="flex justify-center space-x-6">
+                <a href="#" class="text-gray-400 hover:text-neon-purple transition-colors">
+                    <i class="fab fa-instagram text-xl"></i>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-neon-blue transition-colors">
+                    <i class="fab fa-youtube text-xl"></i>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-neon-green transition-colors">
+                    <i class="fab fa-tiktok text-xl"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        (function() {
+            // Custom Cursor
+            const cursor = document.querySelector('.custom-cursor');
+            const cursorTrail = document.querySelector('.custom-cursor-trail');
+            
+            let mouseX = 0, mouseY = 0;
+            let trailX = 0, trailY = 0;
+            
+            document.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                
+                cursor.style.left = mouseX - 10 + 'px';
+                cursor.style.top = mouseY - 10 + 'px';
+            });
+            
+            function animateTrail() {
+                trailX += (mouseX - trailX) * 0.1;
+                trailY += (mouseY - trailY) * 0.1;
+                
+                cursorTrail.style.left = trailX - 4 + 'px';
+                cursorTrail.style.top = trailY - 4 + 'px';
+                
+                requestAnimationFrame(animateTrail);
+            }
+            animateTrail();
+            
+            // Three.js Particle Background
+            const canvas = document.getElementById('particle-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0);
+            
+            // Create particles
+            const particleCount = 1000;
+            const particles = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 100;
+                positions[i + 1] = (Math.random() - 0.5) * 100;
+                positions[i + 2] = (Math.random() - 0.5) * 100;
+                
+                colors[i] = Math.random() * 0.5 + 0.5;
+                colors[i + 1] = Math.random() * 0.3 + 0.2;
+                colors[i + 2] = Math.random() * 0.8 + 0.2;
+            }
+            
+            particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particles.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const particleMaterial = new THREE.PointsMaterial({
+                size: 2,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+            
+            const particleSystem = new THREE.Points(particles, particleMaterial);
+            scene.add(particleSystem);
+            
+            camera.position.z = 50;
+            
+            function animateParticles() {
+                requestAnimationFrame(animateParticles);
+                
+                particleSystem.rotation.x += 0.001;
+                particleSystem.rotation.y += 0.002;
+                
+                const positions = particleSystem.geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i + 1] += Math.sin(Date.now() * 0.001 + positions[i]) * 0.01;
+                }
+                particleSystem.geometry.attributes.position.needsUpdate = true;
+                
+                renderer.render(scene, camera);
+            }
+            animateParticles();
+            
+            // Typing Animation
+            const typingText = document.getElementById('typing-text');
+            const text = "I Turn Clips Into Viral Stories";
+            let index = 0;
+            
+            function typeWriter() {
+                if (index < text.length) {
+                    typingText.textContent = text.substring(0, index + 1);
+                    index++;
+                    setTimeout(typeWriter, 100);
+                } else {
+                    setTimeout(() => {
+                        index = 0;
+                        typingText.textContent = "";
+                        typeWriter();
+                    }, 3000);
+                }
+            }
+            typeWriter();
+            
+            // GSAP Animations
+            gsap.registerPlugin(ScrollTrigger);
+            
+            // Hero animations
+            gsap.fromTo('.hero-content', 
+                { opacity: 0, y: 100 },
+                { opacity: 1, y: 0, duration: 1.5, ease: "power3.out" }
+            );
+            
+            // Section animations
+            gsap.utils.toArray('section:not(#hero)').forEach(section => {
+                gsap.fromTo(section.children,
+                    { opacity: 0, y: 50 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        duration: 1,
+                        stagger: 0.2,
+                        scrollTrigger: {
+                            trigger: section,
+                            start: "top 80%",
+                            end: "bottom 20%",
+                            toggleActions: "play none none reverse"
+                        }
+                    }
+                );
+            });
+            
+            // Service cards animation
+            gsap.utils.toArray('.service-card').forEach((card, index) => {
+                gsap.fromTo(card,
+                    { opacity: 0, scale: 0.8, rotateY: 45 },
+                    {
+                        opacity: 1,
+                        scale: 1,
+                        rotateY: 0,
+                        duration: 0.8,
+                        delay: index * 0.1,
+                        scrollTrigger: {
+                            trigger: card,
+                            start: "top 85%",
+                            toggleActions: "play none none reverse"
+                        }
+                    }
+                );
+            });
+
+             const tabs = document.querySelectorAll('.service-tab');
+  const panels = document.querySelectorAll('.service-panel');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      panels.forEach(panel => panel.classList.add('hidden'));
+      document.getElementById(tab.dataset.tab).classList.remove('hidden');
+    });
+  });
+            
+            // Responsive handling
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+            
+            // Smooth scroll
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Form handling placeholder
+            document.querySelector('form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                // TODO: Implement form submission logic
+                alert('Thank you for your message! I\'ll get back to you soon.');
+            });
+        })();
+
+const videos = document.querySelectorAll('#videography video');
+const transtionVideos = document.querySelectorAll('.transitions video');
+
+  // Autoplay all videos on load
+  window.addEventListener('DOMContentLoaded', () => {
+    videos.forEach(video => {
+      video.muted = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.loop = true;
+      video.play();
+    });
+  });
+
+  // Video click interaction
+  videos.forEach(video => {
+    video.addEventListener('click', () => {
+      // Pause and reset all other videos
+      videos.forEach(v => {
+        if (v !== video) {
+          v.pause();
+          v.controls = false;
+          v.muted = true;
+        }
+      });
+
+      
+
+      // Show controls on clicked video
+      video.play()
+      video.controls = true;
+      video.muted = false;
+    });
+  });
+  // Autoplay all videos on load
+  window.addEventListener('DOMContentLoaded', () => {
+    transtionVideos.forEach(video => {
+      video.muted = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.loop = true;
+      video.play();
+    });
+  });
+
+  // Video click interaction
+  transtionVideos.forEach(video => {
+    video.addEventListener('click', () => {
+      // Pause and reset all other videos
+      transtionVideos.forEach(v => {
+        if (v !== video) {
+          v.pause();
+          v.controls = false;
+          v.muted = true;
+        }
+      });
+
+      
+
+      // Show controls on clicked video
+      video.play()
+      video.controls = true;
+      video.muted = false;
+    });
+  });
+    </script>
+</body>
+</html>
